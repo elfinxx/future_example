@@ -16,14 +16,14 @@ object FutureMain extends App {
     "bot"
   }
 
-  def benderJob(s: String) = Future {
-    println(s"[BotMeta] Intent on ${sw.compare}")
+  val benderJob = Future {
+    println(s"[Bender] Intent on ${sw.compare}")
     Thread.sleep(1500)
-    println(s"[BotMeta] Intent done on ${sw.compare}")
+    println(s"[Bender] Intent done on ${sw.compare}")
     "intent"
   }
 
-  def jetstormJob(s: String) = Future {
+  val jetstormJob = Future {
     println(s"[JetStorm] Action on ${sw.compare}")
     Thread.sleep(2000)
     println(s"[JetStorm] Action done on ${sw.compare}")
@@ -32,8 +32,8 @@ object FutureMain extends App {
 
   val result = for {
     meta: String <- grimlockJob
-    intent <- benderJob(meta)
-    action <- jetstormJob(intent)
+    intent <- benderJob
+    action <- jetstormJob
 
   } yield {
     println(meta)
