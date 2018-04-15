@@ -2,9 +2,9 @@ package com.lightbend.akka.example
 
 import java.util.UUID
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
-import scala.util.Random
+import scala.util.{Failure, Random, Success}
 
 object FutureMain extends App {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -13,45 +13,61 @@ object FutureMain extends App {
   type SkillResult = String
 
   val sw = new StopWatch
-
   log("Start")
-  val bot = getBot
-  val intent = getIntent(bot)
-  val skillResult = resolveSkill(intent.skillUrl)
-  val c = Conversation(
-    UUID.randomUUID().toString,
-    bot = Some(bot),
-    intent = Some(intent),
-    skillResult = Some(skillResult)
-  )
-  println(c)
+
+  val c = for {
+    bot <- getBot
+    intent <- getIntent(bot)
+    skillResult <- resolveSkill(intent)
+  } yield {
+    Conversation(uid, bot, intent, skillResult)
+  }
+
+  log(c.toString)
+
   log("End")
 
 
-  def getBot: Bot = {
-    log(s"[Grimlock] Bot meta on")
+  c.onComplete {
+    case Success(Conversation(_, _, _, _)) =>
+      log(c.toString)
+    case Failure(e) =>
+      log(e.getLocalizedMessage)
+  }
+
+  log(Await.result(c, 8000 millis).toString)
+
+
+  def getBot: Future[Option[Bot]] = Future {
+    log(s"[Grimlock] Get bot meta on")
     Thread.sleep(500)
-    log(s"[Grimlock] Bot meta Done on")
-    Bot(UUID.randomUUID().toString, "aBot")
+    log(s"[Grimlock] Get bot meta Done on")
+    Some(Bot(uid, "aBot"))
   }
 
-  def getIntent(bot: Bot): Intent = {
-    log(s"[Bender] Intent on")
+  def getIntent(bot: Option[Bot]): Future[Option[Intent]] = Future {
+    log(s"[Bender] Get intent on")
     Thread.sleep(1000)
-    log(s"[Bender] Intent done on")
-    Intent.getSomeIntent
+    log(s"[Bender] Get intent done on")
+    Some(Intent.getSomeIntent)
   }
 
-  def resolveSkill(skillUrl: String): SkillResult = {
-    log(s"[JetStorm] action start on")
+  def resolveSkill(intent: Option[Intent]): Future[Option[String]] = Future {
+    log(s"[JetStorm] Do action start on")
     val ranValue = Random.nextDouble() * 1000
     Thread.sleep(1500)
-    val s = s"[JetStorm] action resolve ${ranValue.day} on"
+    val s = s"[JetStorm] Do action done $ranValue on"
     log(s)
-    s
+    Some(s)
   }
 
   def log(s: String): Unit = println(s"$s on ${sw.compare} (${Thread.currentThread.getName})")
+
+  def uid: String = UUID.randomUUID().toString.split("-").head
+
+  type Recovery[T] = PartialFunction[Throwable, T]
+
+  def withNone[T]: Recovery[Option[T]] = { case e => None }
 
 }
 
@@ -88,7 +104,7 @@ case class Conversation(
         s"Bot but no intent - $id"
       case Conversation(_, Some(_), Some(_), None) =>
         s"Bot and intent but no skill result - $id"
-      case _ =>
+      case Conversation(_, Some(_), Some(_), Some(_)) =>
         s"${bot.get.name} - ${intent.get.name}"
     }
   }
@@ -112,5 +128,3 @@ class StopWatch {
     }
   }
 }
-
-
