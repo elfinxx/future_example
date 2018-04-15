@@ -9,21 +9,21 @@ object FutureMain extends App {
 
   val sw = new StopWatch
 
-  val grimlockJob = Future {
+  def grimlockJob = Future {
     println(s"[BotMeta] Bot meta on ${sw.compare}")
     Thread.sleep(500)
     println(s"[BotMeta] Bot meta Done on ${sw.compare}")
     "bot"
   }
 
-  val benderJob = Future {
+  def benderJob = Future {
     println(s"[Bender] Intent on ${sw.compare}")
     Thread.sleep(1500)
     println(s"[Bender] Intent done on ${sw.compare}")
     "intent"
   }
 
-  val jetstormJob = Future {
+  def jetstormJob = Future {
     println(s"[JetStorm] Action on ${sw.compare}")
     Thread.sleep(2000)
     println(s"[JetStorm] Action done on ${sw.compare}")
@@ -31,7 +31,7 @@ object FutureMain extends App {
   }
 
   val result = for {
-    meta: String <- grimlockJob
+    meta <- grimlockJob
     intent <- benderJob
     action <- jetstormJob
 
