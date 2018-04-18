@@ -15,10 +15,33 @@ object FutureMain extends App {
   val sw = new StopWatch
   log("Start")
 
+  val getBot: Future[Option[Bot]] = Future {
+    log(s"[Grimlock] Get bot meta on")
+    Thread.sleep(500)
+    log(s"[Grimlock] Get bot meta Done on")
+    Some(Bot(uid, "aBot"))
+  }
+
+  val getIntent: Future[Option[Intent]] = Future {
+    log(s"[Bender] Get intent on")
+    Thread.sleep(1000)
+    log(s"[Bender] Get intent done on")
+    Some(Intent.getSomeIntent)
+  }
+
+  val resolveSkill: Future[Option[String]] = Future {
+    log(s"[JetStorm] Do action start on")
+    val ranValue = Random.nextDouble() * 1000
+    Thread.sleep(1500)
+    val s = s"[JetStorm] Do action done $ranValue on"
+    log(s)
+    Some(s)
+  }
+
   val c = for {
     bot <- getBot
-    intent <- getIntent(bot)
-    skillResult <- resolveSkill(intent)
+    intent <- getIntent
+    skillResult <- resolveSkill
   } yield {
     Conversation(uid, bot, intent, skillResult)
   }
@@ -37,29 +60,6 @@ object FutureMain extends App {
 
   log(Await.result(c, 8000 millis).toString)
 
-
-  def getBot: Future[Option[Bot]] = Future {
-    log(s"[Grimlock] Get bot meta on")
-    Thread.sleep(500)
-    log(s"[Grimlock] Get bot meta Done on")
-    Some(Bot(uid, "aBot"))
-  }
-
-  def getIntent(bot: Option[Bot]): Future[Option[Intent]] = Future {
-    log(s"[Bender] Get intent on")
-    Thread.sleep(1000)
-    log(s"[Bender] Get intent done on")
-    Some(Intent.getSomeIntent)
-  }
-
-  def resolveSkill(intent: Option[Intent]): Future[Option[String]] = Future {
-    log(s"[JetStorm] Do action start on")
-    val ranValue = Random.nextDouble() * 1000
-    Thread.sleep(1500)
-    val s = s"[JetStorm] Do action done $ranValue on"
-    log(s)
-    Some(s)
-  }
 
   def log(s: String): Unit = println(s"$s on ${sw.compare} (${Thread.currentThread.getName})")
 
